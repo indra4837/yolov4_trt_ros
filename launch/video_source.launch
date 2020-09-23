@@ -1,5 +1,5 @@
 <launch>
-	<arg name="input" default="/home/jetson-indra/test.mp4"/>
+	<arg name="input" default="csi://0"/>
 	<arg name="input_width" default="0"/>
 	<arg name="input_height" default="0"/>
 	<arg name="input_codec" default="unknown"/>
