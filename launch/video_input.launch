@@ -1,0 +1,6 @@
+<launch>
+	<arg name="input_format" default="csi://0"/>
+	<arg name="model" default="yolov4-416"/>
+	
+	<node pkg="yolov4_trt" type="trt_yolo_ros.py" name="yolo_object_detect" output="screen"/>
+</launch>

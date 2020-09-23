@@ -1,0 +1,13 @@
+<launch>
+	<!-- yolov4_trt_node -->
+	
+
+	<node pkg="yolov4_trt" type="trt_yolo_v4.py" name="yolov4_trt_node" output="screen">
+		<param name="model" type="string" value="yolov4" />	
+		<param name="model_path" type="string" value="$(find yolov4_trt)/yolo/" />
+		<param name="input_shape" type="string" value="416" />
+		<param name="category_number" type="int" value="80" />
+		<param name="confidence_threshold" type="double" value="0.5" />
+		<param name="show_image" type="bool" value="True" />
+	</node>
+</launch>

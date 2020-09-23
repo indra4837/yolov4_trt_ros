@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>yolov4_trt</name>
+  <version>0.0.0</version>
+  <description>The yolov4_trt package</description>
+
+  <maintainer email="e0175651@u.nus.edu">indra</maintainer>
+
+  <license>BSD</license>
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>cv_bridge</build_depend>
+  <build_depend>image_transport</build_depend>
+  <build_depend>rospy</build_depend>
+  <build_depend>sensor_msgs</build_depend>
+  <build_depend>vision_msgs</build_depend>
+  <build_depend>nodelet</build_depend>
+  <build_depend>message_generation</build_depend>
+
+  <build_export_depend>cv_bridge</build_export_depend>
+  <build_export_depend>image_transport</build_export_depend>
+  <build_export_depend>rospy</build_export_depend>
+  <build_export_depend>sensor_msgs</build_export_depend>
+  <build_export_depend>vision_msgs</build_export_depend>
+  <build_export_depend>nodelet</build_export_depend>
+  
+  <exec_depend>cv_bridge</exec_depend>
+  <exec_depend>image_transport</exec_depend>
+  <exec_depend>rospy</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>vision_msgs</exec_depend>
+  <exec_depend>nodelet</exec_depend>
+  <exec_depend>message_runtime</exec_depend>
+
+  <export>
+    <nodelet plugin="${prefix}/ros_deep_learning_nodelets.xml"/>
+  </export>
+</package>
