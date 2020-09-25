@@ -30,7 +30,6 @@ add_message_files(
 generate_messages(DEPENDENCIES std_msgs vision_msgs)
 	 
 catkin_package(
-  LIBRARIES ros_deep_learning_nodelets
   CATKIN_DEPENDS nodelet rospy image_transport sensor_msgs vision_msgs cv_bridge message_runtime
 )
 
@@ -42,10 +41,6 @@ set(common_src src/image_converter.cpp src/ros_compat.cpp)
 
 add_executable(video_source src/node_video_source.cpp ${common_src})
 target_link_libraries(video_source ${catkin_LIBRARIES} jetson-inference)
-
-if(catkin_EXPORTED_LIBRARIES)
-  add_dependencies(ros_deep_learning_nodelets ${catkin_EXPORTED_LIBRARIES})
-endif()
 
 catkin_install_python(PROGRAMS trt_yolo_v4.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
