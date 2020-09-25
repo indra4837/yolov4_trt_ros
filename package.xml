@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>yolov4_trt</name>
+  <name>yolov4_trt_ros</name>
   <version>0.0.0</version>
-  <description>The yolov4_trt package</description>
+  <description>The yolov4_trt_ros package</description>
 
   <maintainer email="e0175651@u.nus.edu">indra</maintainer>
 
@@ -31,8 +31,4 @@
   <exec_depend>vision_msgs</exec_depend>
   <exec_depend>nodelet</exec_depend>
   <exec_depend>message_runtime</exec_depend>
-
-  <export>
-    <nodelet plugin="${prefix}/ros_deep_learning_nodelets.xml"/>
-  </export>
 </package>
