@@ -5,7 +5,7 @@
 	<arg name="input_codec" default="unknown"/>
 	<arg name="input_loop" default="0"/>
 
-	<node pkg="yolov4_trt" type="video_source" name="video_source" output="screen">
+	<node pkg="yolov4_trt_ros" type="video_source" name="video_source" output="screen">
 		<param name="resource" value="$(arg input)"/>
 		<param name="width" value="$(arg input_width)"/>
 		<param name="height" value="$(arg input_height)"/>
