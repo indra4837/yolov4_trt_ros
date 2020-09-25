@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(yolov4_trt)
+project(yolov4_trt_ros)
 
 find_package(OpenCV 3.0 REQUIRED)
 find_package(jetson-utils REQUIRED)
