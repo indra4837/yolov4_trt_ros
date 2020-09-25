@@ -2,7 +2,9 @@
 
 This package contains the yolov4_trt_node that performs the inference using NVIDIA's TensorRT engine
 
-Average FPS for 640x320 input is ~ 9 FPS
+This package works for both YOLOv3 and YOLOv4. Do change the commands accordingly, corresponding to the YOLO model used.
+
+Average FPS for yolov4-416 on a 640x360 input is ~ 9 FPS
 
 ![Video_Result2](docs/results2.png)
 
@@ -37,16 +39,18 @@ Average FPS for 640x320 input is ~ 9 FPS
 
 ```
 Install pycuda (takes awhile)
+$ cd ${HOME}/catkin_ws/src/yolov4_trt_ros/dependencies
 $ ./install_pycuda.sh
 
 Install Protobuf (takes awhile)
+$ cd ${HOME}/catkin_ws/src/yolov4_trt_ros/dependencies
 $ ./install_protobuf-3.8.0.sh
 
 Install onnx (depends on Protobuf above)
 $ sudo pip3 install onnx==1.4.1
 ```
 
-* If you are using the camera capture (roslaunch , please also install [jetson-inference](https://github.com/dusty-nv/ros_deep_learning#jetson-inference)
+* Please also install [jetson-inference](https://github.com/dusty-nv/ros_deep_learning#jetson-inference)
 ---
 ## Setting up the package
 
@@ -60,7 +64,7 @@ $ source devel/setup.bash
 ### 2. Make libyolo_layer.so
 
 ```
-$ cd ${HOME}/catkin_ws/src/yolov4_trt/plugins
+$ cd ${HOME}/catkin_ws/src/yolov4_trt_ros/plugins
 $ make
 ```
 
@@ -69,7 +73,7 @@ This will generate a libyolo_layer.so file
 ### 3. Change libyolo_layer.so path in yolo_with_plugins_v4.py
 
 ```
-$ cd ${HOME}/catkin_ws/src/yolov4_trt/utils
+$ cd ${HOME}/catkin_ws/src/yolov4_trt_ros/utils
 ```
 
 Change the path in Line 13 to the correct full path of the previously built `libyolo_layer.so` file
@@ -77,28 +81,63 @@ Change the path in Line 13 to the correct full path of the previously built `lib
 ### 4. Place your yolo.weights and yolo.cfg file in the yolo folder
 
 ```
-$ cd ${HOME}/catkin_ws/src/yolov4_trt/yolo
+$ cd ${HOME}/catkin_ws/src/yolov4_trt_ros/yolo
 ```
-*** Please name the yolov4.weights and yolov4.cfg file as follows:
-- yolov4-416.weights (replace 416 with any input shape you want) (input_shape = 288/416/608 etc.)
-- yolov4-416.cfg
+** Please name the yolov4.weights and yolov4.cfg file as follows:
+- yolov4.weights
+- yolov4.cfg
+
+** Replace the -416 with any input shape you want (208/416/608)
 
 ```
+$ echo "Creating yolov4-416.cfg and yolov4-416.weights"
+$ cat yolov4.cfg | sed -e '2s/batch=64/batch=1/' | sed -e '7s/width=608/width=416/' | sed -e '8s/height=608/height=416/' > yolov4-416.cfg
+$ ln -sf yolov4.weights yolov4-416.weights
+```
+
+#### For YOLOv3
+```
+# python3 yolo_to_onnx.py -m model_name -c category_num[80]
+$ python3 yolo_to_onnx.py -m yolov3-416
+
+# python3 onnx_to_tensorrt.py -m model_name -c category_num[80]
+$ python3 onnx_to_tensorrt.py -m yolov3-416
+```
+
+#### For YOLOv4
+```
+# python3 yolo_to_onnx.py -m model_name -c category_num[80]
 $ python3 yolo_to_onnx.py -m yolov4-416
+
+# python3 onnx_to_tensorrt.py -m model_name -c category_num[80]
 $ python3 onnx_to_tensorrt.py -m yolov4-416
 ```
 
 - This conversion might take awhile
-- The optimised TensorRT engine would now be saved as yolov4-416.trt
+- The optimised TensorRT engine would now be saved as yolov3-416.trt / yolov4-416.trt
 
 ### 5. Change the class labels
 
 ```
-$ cd ${HOME}/catkin_ws/src/yolov4_trt/utils
+$ cd ${HOME}/catkin_ws/src/yolov4_trt_ros/utils
 $ vim yolo_classes.py
 ```
 
 - Change the class labels to suit your model
+
+### 6. Change the video_input and topic_name
+
+```
+$ cd ${HOME}/catkin_ws/src/yolov4_trt_ros/launch
+```
+
+- `yolov3_trt.launch` : change the topic_name
+
+- `yolov4_trt.launch` : change the topic_name
+
+- `video_source.launch` : change the input format 
+
+   *video_source.launch requires jetson-inference to be installed
 
 ---
 ## Using the package
@@ -107,27 +146,31 @@ $ vim yolo_classes.py
 
 Note: Run the launch files separately in different terminals
 
-### 1. Run the camera capture
+### 1. Run the video_source 
 
 ```
 # For csi input
-$ roslaunch yolov4_trt video_source.launch input:=csi://0
+$ roslaunch yolov4_trt_ros video_source.launch input:=csi://0
 
 # For video input
-$ roslaunch yolov4_trt video_source.launch input:=/path_to_video/video.mp4
+$ roslaunch yolov4_trt_ros video_source.launch input:=/path_to_video/video.mp4
 ```
 
-### 2. Run the yolov4 detector
+### 2. Run the yolo detector
 
 ```
-$ roslaunch yolov4_trt yolov4_trt.launch
+# For YOLOv3
+$ roslaunch yolov4_trt_ros yolov3_trt.launch
+
+# For YOLOv4
+$ roslaunch yolov4_trt_ros yolov4_trt.launch
 ```
 
 ### Parameters
 
-- str model = "yolov4" 
+- str model = "yolov3" or "yolov4" 
 - str model_path = "/abs_path_to_model/"
-- int input_shape = 416
+- int input_shape = 288/416/608
 - int category_num = 80
 - double conf_th = 0.5
 - bool show_img = True
@@ -160,8 +203,10 @@ $ roslaunch yolov4_trt yolov4_trt.launch
 ---
 ## Licenses and References
 
-Referenced source code from [jkjung-avt](https://github.com/jkjung-avt/) and his project with tensorrt samples
+### 1. Referenced source code from [jkjung-avt](https://github.com/jkjung-avt/) and his project with tensorrt samples
 
 I also used the pycuda and protobuf installation script from his project
 
 Those code are under [MIT License](https://github.com/jkjung-avt/tensorrt_demos/blob/master/LICENSE)
+
+### 2. Referenced video_input source code from [dusty-nv](https://github.com/dusty-nv/ros_deep_learning#jetson-inference)
