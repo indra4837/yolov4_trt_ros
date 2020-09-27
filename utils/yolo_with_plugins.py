@@ -2,16 +2,18 @@ from __future__ import print_function
 
 import ctypes
 
+import rospkg
 import numpy as np
 import cv2
 import tensorrt as trt
 import pycuda.driver as cuda
 import pycuda.autoinit
 
+rospack = rospkg.RosPack()
+plugin_path = rospack.get_path("yolov4_trt_ros") + "/plugins/libyolo_layer.so"
 
 try:
-    ctypes.cdll.LoadLibrary(
-        "/home/jetson-indra/test_ws/src/yolov4_trt_ros/plugins/libyolo_layer.so")
+    ctypes.cdll.LoadLibrary(plugin_path)
 except OSError as e:
     raise SystemExit('ERROR: failed to load ./plugins/libyolo_layer.so.  '
                      'Did you forget to do a "make" in the "./plugins/" '
