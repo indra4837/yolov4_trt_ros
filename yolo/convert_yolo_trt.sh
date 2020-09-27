@@ -1,16 +1,16 @@
 echo "YOLOv3 or YOLOv4. Input 3 or 4"
 read model_type
 
-echo "What is the input shape? 208/416/608"
+echo "What is the input shape? Input 288 or 416 or 608"
 read input_shape
 
 if [[ $model_type == 3 ]]
 then
-    if [[ $input_shape == 208 ]]
+    if [[ $input_shape == 288 ]]
     then
-        echo "Creating yolov3-208.cfg and yolov3-208.weights"
-        cat yolov3.cfg | sed -e '2s/batch=64/batch=1/' | sed -e '7s/width=608/width=208/' | sed -e '8s/height=608/height=208/' > yolov3-208.cfg
-        ln -sf yolov3.weights yolov3-208.weights
+        echo "Creating yolov3-288.cfg and yolov3-288.weights"
+        cat yolov3.cfg | sed -e '2s/batch=64/batch=1/' | sed -e '7s/width=608/width=288/' | sed -e '8s/height=608/height=288/' > yolov3-288.cfg
+        ln -sf yolov3.weights yolov3-288.weights
     fi
     if [[ $input_shape == 416 ]]
     then
@@ -25,11 +25,11 @@ then
         ln -sf yolov3.weights yolov3-608.weights
     fi
 else
-    if [[ $input_shape == 208 ]]
+    if [[ $input_shape == 288 ]]
     then
-        echo "Creating yolov4-208.cfg and yolov4-208.weights"
-        cat yolov4.cfg | sed -e '2s/batch=64/batch=1/' | sed -e '7s/width=608/width=208/' | sed -e '8s/height=608/height=208/' > yolov4-208.cfg
-        ln -sf yolov4.weights yolov4-208.weights
+        echo "Creating yolov4-288.cfg and yolov4-288.weights"
+        cat yolov4.cfg | sed -e '2s/batch=64/batch=1/' | sed -e '7s/width=608/width=288/' | sed -e '8s/height=608/height=288/' > yolov4-288.cfg
+        ln -sf yolov4.weights yolov4-288.weights
     fi
     if [[ $input_shape == 416 ]]
     then
@@ -47,7 +47,7 @@ fi
 
 echo "How many categories are there?"
 read category_num
-model_name = "yolov" + $model_type + "-" + $input_shape
+model_name="yolov${model_type}-${input_shape}"
 
 # convert from yolo to onnx
 python3 yolo_to_onnx.py -m $model_name -c $category_num
@@ -57,6 +57,6 @@ echo "..."
 echo "Now converting to .trt"
 
 # convert from onnx to trt
-python3 onnx_to_trt.py -m $model_name -c $category_num --verbose
+python3 onnx_to_tensorrt.py -m $model_name -c $category_num --verbose
 
 echo "Conversion from yolo to trt done!"
