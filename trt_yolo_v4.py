@@ -13,6 +13,7 @@ from utils.visualization import BBoxVisualization
 from utils.yolo_with_plugins import TrtYOLO
 
 import rospy
+import rospkg
 from yolov4_trt.msg import Detector2DArray
 from yolov4_trt.msg import Detector2D
 from vision_msgs.msg import BoundingBox2D
@@ -23,6 +24,7 @@ from cv_bridge import CvBridge, CvBridgeError
 class yolov4(object):
     def __init__(self):
         """ Constructor """
+
         self.bridge = CvBridge()
         self.init_params()
         self.init_yolo()
@@ -32,6 +34,7 @@ class yolov4(object):
 
     def __del__(self):
         """ Destructor """
+
         self.cuda_ctx.pop()
         del self.trt_yolo
         del self.cuda_ctx
@@ -46,20 +49,23 @@ class yolov4(object):
 
     def init_params(self):
         """ Initializes ros parameters """
+
+	rospack = rospkg.RosPack()
+	package_path = rospack.get_path("yolov4_trt_ros")
         self.video_topic = rospy.get_param("/video_topic", "/video_source/raw")
         self.model = rospy.get_param("/model", "yolov4")
         self.model_path = rospy.get_param(
-            "/model_path", "/home/jetson-indra/test_ws/src/yolov4_trt_ros/yolo/")
+            "/model_path", package_path + "/yolo/")
         self.input_shape = rospy.get_param("/input_shape", "416")
         self.category_num = rospy.get_param("/category_number", 80)
         self.conf_th = rospy.get_param("/confidence_threshold", 0.5)
         self.show_img = rospy.get_param("/show_image", True)
         self.image_sub = rospy.Subscriber(
-            self.video_topic, Image, self.img_callback)
+            self.video_topic, Image, self.img_callback, queue_size=1, buff_size=1920*1080*3)
         self.detection_pub = rospy.Publisher(
-            "detections", Detector2DArray, queue_size=25)
+            "detections", Detector2DArray, queue_size=1)
         self.overlay_pub = rospy.Publisher(
-            "/result/overlay", Image, queue_size=2)
+            "/result/overlay", Image, queue_size=1)
 
     def init_yolo(self):
         """ Initialises yolo parameters required for trt engine """
@@ -109,7 +115,7 @@ class yolov4(object):
             cv2.imshow("YOLOv4 DETECTION RESULTS", cv_img)
             cv2.waitKey(1)
 
-            # converts back to ros_img type for publishing
+        # converts back to ros_img type for publishing
         try:
             overlay_img = self.bridge.cv2_to_imgmsg(
                 cv_img, encoding="passthrough")
@@ -133,19 +139,20 @@ class yolov4(object):
             # boxes : xmin, ymin, xmax, ymax
             for _ in boxes:
                 detection.header.stamp = rospy.Time.now()
+		detection.header.frame_id = "camera" # change accordingly
                 detection.results.id = clss[i]
                 detection.results.score = confs[i]
 
-                detection.bbox.center.x = (boxes[i][0] - boxes[i][2])/2
-                detection.bbox.center.y = (boxes[i][1] - boxes[i][3])/2
+                detection.bbox.center.x = (boxes[i][2] - boxes[i][0])/2
+                detection.bbox.center.y = (boxes[i][3] - boxes[i][1])/2
                 detection.bbox.center.theta = 0.0  # change if required
 
-                detection.bbox.size_x = boxes[i][0] - boxes[i][2]
-                detection.bbox.size_y = boxes[i][1] - boxes[i][3]
+                detection.bbox.size_x = abs(boxes[i][0] - boxes[i][2])
+                detection.bbox.size_y = abs(boxes[i][1] - boxes[i][3])
 
             detection2d.detections.append(detection)
 
-            self.detection_pub.publish(detection2d)
+	self.detection_pub.publish(detection2d)
 
 
 def main():
