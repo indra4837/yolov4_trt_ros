@@ -4,7 +4,9 @@ This package contains the yolov4_trt_node that performs the inference using NVID
 
 This package works for both YOLOv3 and YOLOv4. Do change the commands accordingly, corresponding to the YOLO model used.
 
-Average FPS for yolov4-416 on a 640x360 input is ~ 9 FPS
+Average FPS for yolov4-416 on a 640x360 input is ~ 8-9 FPS
+
+Average FPS w maximum performace on Jetson is ~ 10-11 FPS
 
 ![Video_Result2](docs/results2.png)
 
@@ -15,11 +17,16 @@ Average FPS for yolov4-416 on a 640x360 input is ~ 9 FPS
 
 ### Current Environment:
 
+- ROS 	   == Melodic
+
+- DISTRO   == Ubuntu 18.04
+
 - Jetson   == Tx2
 
 - Jetpack  == 4.4
 
 - CUDA     == 10.2
+
 
 #### Dependencies:
 
@@ -51,6 +58,7 @@ $ sudo pip3 install onnx==1.4.1
 ```
 
 * Please also install [jetson-inference](https://github.com/dusty-nv/ros_deep_learning#jetson-inference)
+* Note: This package uses similar nodes to ros_deep_learning package. Please place a CATKIN_IGNORE in that package to avoid similar node name catkin_make error
 ---
 ## Setting up the package
 
@@ -70,15 +78,7 @@ $ make
 
 This will generate a libyolo_layer.so file
 
-### 3. Change libyolo_layer.so path in yolo_with_plugins_v4.py
-
-```
-$ cd ${HOME}/catkin_ws/src/yolov4_trt_ros/utils
-```
-
-Change the path in Line 13 to the correct full path of the previously built `libyolo_layer.so` file
-
-### 4. Place your yolo.weights and yolo.cfg file in the yolo folder
+### 3. Place your yolo.weights and yolo.cfg file in the yolo folder
 
 ```
 $ cd ${HOME}/catkin_ws/src/yolov4_trt_ros/yolo
@@ -87,36 +87,17 @@ $ cd ${HOME}/catkin_ws/src/yolov4_trt_ros/yolo
 - yolov4.weights
 - yolov4.cfg
 
-** Replace the -416 with any input shape you want (208/416/608)
+Run the conversion script to convert to TensorRT engine file
 
 ```
-$ echo "Creating yolov4-416.cfg and yolov4-416.weights"
-$ cat yolov4.cfg | sed -e '2s/batch=64/batch=1/' | sed -e '7s/width=608/width=416/' | sed -e '8s/height=608/height=416/' > yolov4-416.cfg
-$ ln -sf yolov4.weights yolov4-416.weights
+$ ./convert_yolo_trt
 ```
 
-#### For YOLOv3
-```
-# python3 yolo_to_onnx.py -m model_name -c category_num[80]
-$ python3 yolo_to_onnx.py -m yolov3-416
-
-# python3 onnx_to_tensorrt.py -m model_name -c category_num[80]
-$ python3 onnx_to_tensorrt.py -m yolov3-416
-```
-
-#### For YOLOv4
-```
-# python3 yolo_to_onnx.py -m model_name -c category_num[80]
-$ python3 yolo_to_onnx.py -m yolov4-416
-
-# python3 onnx_to_tensorrt.py -m model_name -c category_num[80]
-$ python3 onnx_to_tensorrt.py -m yolov4-416
-```
-
+- Input the appropriate arguments
 - This conversion might take awhile
 - The optimised TensorRT engine would now be saved as yolov3-416.trt / yolov4-416.trt
 
-### 5. Change the class labels
+### 4. Change the class labels
 
 ```
 $ cd ${HOME}/catkin_ws/src/yolov4_trt_ros/utils
@@ -125,7 +106,7 @@ $ vim yolo_classes.py
 
 - Change the class labels to suit your model
 
-### 6. Change the video_input and topic_name
+### 5. Change the video_input and topic_name
 
 ```
 $ cd ${HOME}/catkin_ws/src/yolov4_trt_ros/launch
@@ -135,9 +116,10 @@ $ cd ${HOME}/catkin_ws/src/yolov4_trt_ros/launch
 
 - `yolov4_trt.launch` : change the topic_name
 
-- `video_source.launch` : change the input format 
+- `video_source.launch` : change the input format (refer to this [Link](https://github.com/dusty-nv/jetson-inference/blob/master/docs/aux-streaming.md)
 
-   *video_source.launch requires jetson-inference to be installed
+   * video_source.launch requires jetson-inference to be installed
+   * Default input is CSI camera
 
 ---
 ## Using the package
@@ -166,6 +148,16 @@ $ roslaunch yolov4_trt_ros yolov3_trt.launch
 $ roslaunch yolov4_trt_ros yolov4_trt.launch
 ```
 
+### 3. For maximum performance
+
+```
+$ cd /usr/bin/
+$ sudo ./nvpmodel -m 0	# Enable 2 Denver CPU
+$ sudo ./jetson_clock	# Maximise CPU/GPU performance
+```
+
+* Please ensure the jetson device is cooled appropriately to prevent overheating
+
 ### Parameters
 
 - str model = "yolov3" or "yolov4" 
@@ -175,6 +167,8 @@ $ roslaunch yolov4_trt_ros yolov4_trt.launch
 - double conf_th = 0.5
 - bool show_img = True
 
+- Default Input FPS from CSI camera = 30.0
+* To change this, go to jetson-inference/utils/camera/gstCamera.cpp line 359 and change `mOptions.frameRate = 15` to `mOptions.frameRate = desired_frame_rate`
 ---
 ## Results obtained
 
