@@ -149,8 +149,8 @@ class yolov4(object):
                 detection.results.id = clss[i]
                 detection.results.score = confs[i]
 
-                detection.bbox.center.x = (boxes[i][2] - boxes[i][0])/2
-                detection.bbox.center.y = (boxes[i][3] - boxes[i][1])/2
+                detection.bbox.center.x = boxes[i][0] + (boxes[i][2] - boxes[i][0])/2
+                detection.bbox.center.y = boxes[i][1] + (boxes[i][3] - boxes[i][1])/2
                 detection.bbox.center.theta = 0.0  # change if required
 
                 detection.bbox.size_x = abs(boxes[i][0] - boxes[i][2])
