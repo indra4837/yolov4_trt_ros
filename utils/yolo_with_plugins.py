@@ -306,6 +306,7 @@ class TrtYOLO(object):
 
     def detect(self, img, conf_th=0.3):
         """ Detect objects in the input image """
+
         img_resized = _preprocess_yolo(img, self.input_shape)
         trt_outputs = []
 
@@ -316,27 +317,40 @@ class TrtYOLO(object):
         if self.cuda_ctx:
             self.cuda_ctx.push()
 
+        self.bindings = [int(i) for i in self.bindings]
+
         context = self.context
         bindings = self.bindings
         inputs = self.inputs
         outputs = self.outputs
         stream = self.stream
 
-        self.bindings = [int(i) for i in self.bindings]
+        if trt.__version__[0] < '7':
+            # Transfer input data to the GPU.
+            [cuda.memcpy_htod_async(inp.device, inp.host, stream) for inp in inputs]
+            # Run inference.
+            context.execute_async(batch_size=1,
+                                bindings=bindings,
+                                stream_handle=stream.handle)
+            # Transfer predictions back from the GPU.
+            [cuda.memcpy_dtoh_async(out.host, out.device, stream) for out in outputs]
+            # Synchronize the stream
+            stream.synchronize()
+            # Return only the host outputs.
+        else:
+            # Transfer input data to the GPU.
+            [cuda.memcpy_htod_async(inp.device, inp.host, stream)
+            for inp in inputs]
+            # Run inference.
+            context.execute_async_v2(
+                bindings=self.bindings, stream_handle=stream.handle)
+            # Transfer predictions back from the GPU.
+            [cuda.memcpy_dtoh_async(out.host, out.device, stream)
+            for out in outputs]
+            # Synchronize the stream
+            stream.synchronize()
 
-        # Transfer input data to the GPU.
-        [cuda.memcpy_htod_async(inp.device, inp.host, stream)
-         for inp in inputs]
-        # Run inference.
-        context.execute_async_v2(
-            bindings=self.bindings, stream_handle=stream.handle)
-        # Transfer predictions back from the GPU.
-        [cuda.memcpy_dtoh_async(out.host, out.device, stream)
-         for out in outputs]
-        # Synchronize the stream
-        stream.synchronize()
-
-        trt_outputs = [out.host for out in self.outputs]
+        trt_outputs = [out.host for out in outputs]
 
         del context
 
