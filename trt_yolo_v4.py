@@ -14,8 +14,8 @@ from utils.yolo_with_plugins import TrtYOLO
 
 import rospy
 import rospkg
-from yolov4_trt.msg import Detector2DArray
-from yolov4_trt.msg import Detector2D
+from yolov4_trt_ros.msg import Detector2DArray
+from yolov4_trt_ros.msg import Detector2D
 from vision_msgs.msg import BoundingBox2D
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
@@ -49,9 +49,9 @@ class yolov4(object):
 
     def init_params(self):
         """ Initializes ros parameters """
-
-	rospack = rospkg.RosPack()
-	package_path = rospack.get_path("yolov4_trt_ros")
+        
+        rospack = rospkg.RosPack()
+        package_path = rospack.get_path("yolov4_trt_ros")
         self.video_topic = rospy.get_param("/video_topic", "/video_source/raw")
         self.model = rospy.get_param("/model", "yolov4")
         self.model_path = rospy.get_param(
@@ -72,7 +72,8 @@ class yolov4(object):
 
         if self.model.find('-') == -1:
             self.model = self.model + "-" + self.input_shape
-            yolo_dim = self.model.split('-')[-1]
+            
+        yolo_dim = self.model.split('-')[-1]
 
         if 'x' in yolo_dim:
             dim_split = yolo_dim.split('x')
@@ -104,16 +105,16 @@ class yolov4(object):
         if cv_img is not None:
             boxes, confs, clss = self.trt_yolo.detect(cv_img, self.conf_th)
 
-        cv_img = self.vis.draw_bboxes(cv_img, boxes, confs, clss)
-        toc = time.time()
-        fps = 1.0 / (toc - tic)
+            cv_img = self.vis.draw_bboxes(cv_img, boxes, confs, clss)
+            toc = time.time()
+            fps = 1.0 / (toc - tic)
 
-        self.publisher(boxes, confs, clss)
+            self.publisher(boxes, confs, clss)
 
-        if self.show_img:
-            cv_img = show_fps(cv_img, fps)
-            cv2.imshow("YOLOv4 DETECTION RESULTS", cv_img)
-            cv2.waitKey(1)
+            if self.show_img:
+                cv_img = show_fps(cv_img, fps)
+                cv2.imshow("YOLOv4 DETECTION RESULTS", cv_img)
+                cv2.waitKey(1)
 
         # converts back to ros_img type for publishing
         try:
@@ -134,12 +135,13 @@ class yolov4(object):
         """
         detection2d = Detector2DArray()
         detection = Detector2D()
-
+        detection2d.header.stamp = rospy.Time.now()
+        
         for i in range(len(boxes)):
             # boxes : xmin, ymin, xmax, ymax
             for _ in boxes:
                 detection.header.stamp = rospy.Time.now()
-		detection.header.frame_id = "camera" # change accordingly
+                detection.header.frame_id = "camera" # change accordingly
                 detection.results.id = clss[i]
                 detection.results.score = confs[i]
 
@@ -151,8 +153,8 @@ class yolov4(object):
                 detection.bbox.size_y = abs(boxes[i][1] - boxes[i][3])
 
             detection2d.detections.append(detection)
-
-	self.detection_pub.publish(detection2d)
+        
+        self.detection_pub.publish(detection2d)
 
 
 def main():
