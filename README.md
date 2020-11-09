@@ -4,11 +4,8 @@ This package contains the yolov4_trt_node that performs the inference using NVID
 
 This package works for both YOLOv3 and YOLOv4. Do change the commands accordingly, corresponding to the YOLO model used.
 
-Average FPS for yolov4-416 on a 640x360 input is ~ 8-9 FPS
 
-Average FPS w maximum performace on Jetson is ~ 10-11 FPS
-
-![Video_Result2](docs/results2.png)
+![Video_Result2](docs/results.gif)
 
 ---
 ## Setting up the environment
@@ -17,30 +14,18 @@ Average FPS w maximum performace on Jetson is ~ 10-11 FPS
 
 ### Current Environment:
 
-- ROS 	   == Melodic
-
-- DISTRO   == Ubuntu 18.04
-
-- Jetson   == Tx2
-
-- Jetpack  == 4.4
-
-- CUDA     == 10.2
-
+- ROS Melodic
+- Ubuntu 18.04
+- Jetpack 4.4
+- TensorRT 7+
 
 #### Dependencies:
 
-- TensorRT == 6+
-
-- OpenCV == 3.x +
-
-- numpy == 1.15.1 +
-
-- Protobuf == 3.8.0
-
-- Pycuda == 2019.1.2
-
-- onnx == 1.4.1 (depends on Protobuf)
+- OpenCV 3.x
+- numpy 1.15.1 +
+- Protobuf 3.8.0
+- Pycuda 2019.1.2
+- onnx 1.4.1 (depends on Protobuf)
 
 ### Install all dependencies with below commands
 
@@ -136,16 +121,22 @@ $ roslaunch yolov4_trt_ros video_source.launch input:=csi://0
 
 # For video input
 $ roslaunch yolov4_trt_ros video_source.launch input:=/path_to_video/video.mp4
+
+# For USB camera
+$ roslaunch yolov4_trt_ros video_source.launch input:=v4l2://0
 ```
 
 ### 2. Run the yolo detector
 
 ```
-# For YOLOv3
+# For YOLOv3 (single input)
 $ roslaunch yolov4_trt_ros yolov3_trt.launch
 
-# For YOLOv4
+# For YOLOv4 (single input)
 $ roslaunch yolov4_trt_ros yolov4_trt.launch
+
+# For YOLOv4 (multiple input)
+$ roslaunch yolov4_trt_ros yolov4_trt_batch.launch
 ```
 
 ### 3. For maximum performance
@@ -172,27 +163,26 @@ $ sudo ./jetson_clock	# Maximise CPU/GPU performance
 ---
 ## Results obtained
 
+### Inference Results
+#### Single Camera Input
+
+   | Model    | Hardware |    FPS    |  Inference Time (ms)  | 
+   |:---------|:--:|:---------:|:----------------:|
+   | Yolov4-408| Xavier AGX | 40.0 | 0.025 |
+   
+* Will be adding inference tests for YOLOv3/4 and tiny models and multiple camera inputs inference tests in the future
+
 ### 1. Screenshots 
 
 ### Video_in: .mp4 video (640x360)
 
 ### Avg FPS : ~9
 
-![Video_Result1](docs/results.png)
+![Video_Result1](docs/yolov4_custom_1.png)
 
-![Video_Result2](docs/results2.png)
+![Video_Result2](docs/yolov4_custom_2.png)
 
-![Video_Result3](docs/results3.png)
-
----
-
-### Video_in: CSI_cam (1280x720)
-
-### Avg FPS : ~7
-
-![Cam_Result1](docs/cam1.png)
-
-![Cam_Result2](docs/cam2.png)
+![Video_Result3](docs/yolov4_custom_3.png)
 
 ---
 ## Licenses and References
