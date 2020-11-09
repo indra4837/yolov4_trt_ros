@@ -53,11 +53,11 @@ class yolov4(object):
         rospack = rospkg.RosPack()
         package_path = rospack.get_path("yolov4_trt_ros")
         self.video_topic = rospy.get_param("/video_topic", "/video_source/raw")
-        self.model = rospy.get_param("/model", "yolov4")
+        self.model = rospy.get_param("/model", "yolov4Custom")
         self.model_path = rospy.get_param(
             "/model_path", package_path + "/yolo/")
+        self.category_num = rospy.get_param("/category_number", 10)
         self.input_shape = rospy.get_param("/input_shape", "416")
-        self.category_num = rospy.get_param("/category_number", 80)
         self.conf_th = rospy.get_param("/confidence_threshold", 0.5)
         self.show_img = rospy.get_param("/show_image", True)
         self.image_sub = rospy.Subscriber(
@@ -136,11 +136,12 @@ class yolov4(object):
         detection2d = Detector2DArray()
         detection = Detector2D()
         detection2d.header.stamp = rospy.Time.now()
+	detection2d.header.frame_id = "camera" # change accordingly
         
         for i in range(len(boxes)):
             # boxes : xmin, ymin, xmax, ymax
             for _ in boxes:
-                detection.header.stamp = rospy.Time.now()
+		detection.header.stamp = rospy.Time.now()
                 detection.header.frame_id = "camera" # change accordingly
                 detection.results.id = clss[i]
                 detection.results.score = confs[i]
@@ -159,7 +160,7 @@ class yolov4(object):
 
 def main():
     yolo = yolov4()
-    rospy.init_node('yolov4_detection', anonymous=True)
+    rospy.init_node('yolov4_trt_ros', anonymous=True)
     try:
         rospy.spin()
     except KeyboardInterrupt:
