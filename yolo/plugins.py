@@ -14,7 +14,7 @@ try:
 except OSError as e:
     raise SystemExit('ERROR: failed to load ../plugins/libyolo_layer.so.  '
                      'Did you forget to do a "make" in the "../plugins/" '
-                     'subdirectory?') from e
+                     'subdirectory?')
 
 
 def get_input_wh(model_name):

@@ -1,6 +1,21 @@
 echo "YOLOv3 or YOLOv4. Input 3 or 4"
 read model_type
 
+echo "Do you want to download the model? [Y/N]"
+read download
+
+if [[ $download == 'Y' ]]
+then
+    if [[ $model_type == 3 ]]
+    then
+	wget https://raw.githubusercontent.com/pjreddie/darknet/master/cfg/yolov3.cfg -q --show-progress --no-clobber
+	wget https://pjreddie.com/media/files/yolov3.weights -q --show-progress --no-clobber
+    else
+	wget https://raw.githubusercontent.com/AlexeyAB/darknet/master/cfg/yolov4.cfg -q --show-progress --no-clobber
+	wget https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v3_optimal/yolov4.weights -q --show-progress --no-clobber
+    fi
+fi
+
 echo "What is the input shape? Input 288 or 416 or 608"
 read input_shape
 
