@@ -181,47 +181,6 @@ def allocate_buffers(engine, grid_sizes):
     return inputs, outputs, bindings, stream
 
 
-def do_inference(context, bindings, inputs, outputs, stream, batch_size=1):
-    """do_inference (for TensorRT 6.x or lower)
-
-    This function is generalized for multiple inputs/outputs.
-    Inputs and outputs are expected to be lists of HostDeviceMem objects.
-    """
-
-    # Transfer input data to the GPU.
-    [cuda.memcpy_htod_async(inp.device, inp.host, stream) for inp in inputs]
-    # Run inference.
-    context.execute_async(batch_size=batch_size,
-                          bindings=bindings,
-                          stream_handle=stream.handle)
-    # Transfer predictions back from the GPU.
-    [cuda.memcpy_dtoh_async(out.host, out.device, stream) for out in outputs]
-    # Synchronize the stream
-    stream.synchronize()
-    # Return only the host outputs.
-    return [out.host for out in outputs]
-
-
-def do_inference_v2(context, bindings, inputs, outputs, stream):
-    """do_inference_v2 (for TensorRT 7.0+)
-
-    This function is generalized for multiple inputs/outputs for full
-    dimension networks.
-    Inputs and outputs are expected to be lists of HostDeviceMem objects.
-    """
-    # Transfer input data to the GPU.
-    [cuda.memcpy_htod_async(inp.device, inp.host, stream) for inp in inputs]
-    # Run inference.
-    context.execute_async_v2(bindings=bindings, stream_handle=stream.handle)
-    # Transfer predictions back from the GPU.
-    [cuda.memcpy_dtoh_async(out.host, out.device, stream) for out in outputs]
-    # Synchronize the stream
-    stream.synchronize()
-    # Return only the host outputs.
-
-    return [out.host for out in outputs]
-
-
 def get_yolo_grid_sizes(model_name, h, w):
     """Get grid sizes (w*h) for all yolo layers in the model."""
     if 'yolov3' in model_name:
@@ -252,8 +211,6 @@ class TrtYOLO(object):
         self.input_shape = input_shape
         self.category_num = category_num
         self.cuda_ctx = cuda.Device(0).make_context()
-        self.inference_fn = do_inference if trt.__version__[0] < '7' \
-            else do_inference_v2
         self.trt_logger = trt.Logger(trt.Logger.INFO)
         self.engine = self._load_engine()
         self.context = self.engine.create_execution_context()
