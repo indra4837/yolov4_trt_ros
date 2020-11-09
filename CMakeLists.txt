@@ -42,6 +42,6 @@ set(common_src src/image_converter.cpp src/ros_compat.cpp)
 add_executable(video_source src/node_video_source.cpp ${common_src})
 target_link_libraries(video_source ${catkin_LIBRARIES} jetson-inference)
 
-catkin_install_python(PROGRAMS trt_yolo_v4.py
+catkin_install_python(PROGRAMS trt_yolo_v4_batch.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
