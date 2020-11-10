@@ -17,6 +17,8 @@ echo "** Install requirements"
 apt-get install -y build-essential python3-dev
 apt-get install -y libboost-python-dev libboost-thread-dev
 pip3 install setuptools
+pip3 install cython
+pip3 install markupsafe
 
 boost_pylib=$(basename /usr/lib/${arch}-linux-gnu/libboost_python*-py3?.so)
 boost_pylibname=${boost_pylib%.so}
