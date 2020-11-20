@@ -20,7 +20,7 @@ fi
 echo "** Install protoc"
 unzip protobuf-python-3.8.0.zip
 unzip protoc-3.8.0-linux-aarch_64.zip -d protoc-3.8.0
-sudo cp protoc-3.8.0/bin/protoc /usr/local/bin/protoc
+cp protoc-3.8.0/bin/protoc /usr/local/bin/protoc
 
 echo "** Build and install protobuf-3.8.0 libraries"
 export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=cpp
