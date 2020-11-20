@@ -6,7 +6,7 @@ folder=${HOME}/src
 mkdir -p $folder
 
 echo "** Install requirements"
-sudo apt-get install -y autoconf libtool
+apt-get install -y autoconf libtool
 
 echo "** Download protobuf-3.8.0 sources"
 cd $folder
@@ -29,16 +29,16 @@ cd protobuf-3.8.0/
 ./configure --prefix=/usr/local
 make -j$(nproc)
 make check
-sudo make install
-sudo ldconfig
+make install
+ldconfig
 
 echo "** Update python3 protobuf module"
 # remove previous installation of python3 protobuf module
-sudo pip3 uninstall -y protobuf
-sudo pip3 install Cython
+pip3 uninstall -y protobuf
+pip3 install Cython
 cd python/
 python3 setup.py build --cpp_implementation
 python3 setup.py test --cpp_implementation
-sudo python3 setup.py install --cpp_implementation
+python3 setup.py install --cpp_implementation
 
 echo "** Build protobuf-3.8.0 successfully"
