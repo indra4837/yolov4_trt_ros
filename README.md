@@ -14,6 +14,7 @@ This package works for both YOLOv3 and YOLOv4. Do change the commands accordingl
 
 ### Current Environment:
 
+- Jetson Xavier AGX
 - ROS Melodic
 - Ubuntu 18.04
 - Jetpack 4.4
@@ -22,7 +23,7 @@ This package works for both YOLOv3 and YOLOv4. Do change the commands accordingl
 #### Dependencies:
 
 - OpenCV 3.x
-- numpy 1.15.1 +
+- numpy 1.15.1
 - Protobuf 3.8.0
 - Pycuda 2019.1.2
 - onnx 1.4.1 (depends on Protobuf)
@@ -44,6 +45,7 @@ $ sudo pip3 install onnx==1.4.1
 
 * Please also install [jetson-inference](https://github.com/dusty-nv/ros_deep_learning#jetson-inference)
 * Note: This package uses similar nodes to ros_deep_learning package. Please place a CATKIN_IGNORE in that package to avoid similar node name catkin_make error
+* If these scripts do not work for you, do refer to this amazing repository by [jefflgaol](https://github.com/jefflgaol/Install-Packages-Jetson-ARM-Family) on installing the above packages and more on Jetson ARM devices.
 ---
 ## Setting up the package
 
@@ -147,6 +149,7 @@ $ sudo ./nvpmodel -m 0	# Enable 2 Denver CPU
 $ sudo ./jetson_clock	# Maximise CPU/GPU performance
 ```
 
+* These commands are found/referred in this [forum post](https://forums.developer.nvidia.com/t/nvpmodel-and-jetson-clocks/58659/2)
 * Please ensure the jetson device is cooled appropriately to prevent overheating
 
 ### Parameters
@@ -159,7 +162,15 @@ $ sudo ./jetson_clock	# Maximise CPU/GPU performance
 - bool show_img = True
 
 - Default Input FPS from CSI camera = 30.0
-* To change this, go to jetson-inference/utils/camera/gstCamera.cpp line 359 and change `mOptions.frameRate = 15` to `mOptions.frameRate = desired_frame_rate`
+* To change this, go to jetson-inference/utils/camera/gstCamera.cpp 
+
+``` 
+# In line 359, change this line
+mOptions.frameRate = 15
+
+# To desired frame_rate
+mOptions.frameRate = desired_frame_rate
+``` 
 ---
 ## Results obtained
 
@@ -168,15 +179,17 @@ $ sudo ./jetson_clock	# Maximise CPU/GPU performance
 
    | Model    | Hardware |    FPS    |  Inference Time (ms)  | 
    |:---------|:--:|:---------:|:----------------:|
-   | Yolov4-408| Xavier AGX | 40.0 | 0.025 |
+   | Yolov4-416| Xavier AGX | 40.0 | 0.025 |
+   | Yolov4-416| Jetson Tx2 | 16.0 | 0.0625 |
+
    
-* Will be adding inference tests for YOLOv3/4 and tiny models and multiple camera inputs inference tests in the future
+* Will be adding inference tests for YOLOv3/4 and YOLOv3-tiny/YOLOv4-tiny for different Jetson devices and multiple camera inputs inference tests in the future
 
 ### 1. Screenshots 
 
 ### Video_in: .mp4 video (640x360)
-
-### Avg FPS : ~9
+### Tests Done on Xavier AGX
+### Avg FPS : ~38 FPS
 
 ![Video_Result1](docs/yolov4_custom_1.png)
 
@@ -187,10 +200,16 @@ $ sudo ./jetson_clock	# Maximise CPU/GPU performance
 ---
 ## Licenses and References
 
-### 1. Referenced source code from [jkjung-avt](https://github.com/jkjung-avt/) and his project with tensorrt samples
+### 1. TensorRT samples from [jkjung-avt](https://github.com/jkjung-avt/) 
+
+Many thanks for his project with tensorrt samples. I have referenced his source code and adapted it to ROS for robotics applications.
 
 I also used the pycuda and protobuf installation script from his project
 
 Those code are under [MIT License](https://github.com/jkjung-avt/tensorrt_demos/blob/master/LICENSE)
 
-### 2. Referenced video_input source code from [dusty-nv](https://github.com/dusty-nv/ros_deep_learning#jetson-inference)
+### 2. Jetson-inference from [dusty-nv](https://github.com/dusty-nv/ros_deep_learning#jetson-inference)
+
+Many thanks for his work on the Jetson Inference with ROS. I have used his video_source input from his project for capturing video inputs. 
+
+Those code are under [NVIDIA License](https://github.com/dusty-nv/jetson-inference/blob/master/LICENSE.md) 
