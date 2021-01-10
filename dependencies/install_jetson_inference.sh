@@ -1,13 +1,12 @@
 #!/bin/bash
 
-git clone --recursive https://github.com/dusty-nv/jetson-inference
-cd jetson-inference
+cd ~/catkin_ws/src/jetson-inference
 mkdir build
 cd build
-cmake ../
-make -j$(nproc)
-make install
-ldconfig
+sudo cmake ../
+sudo make -j$(nproc)
+sudo make install
+sudo ldconfig
 
 
 
