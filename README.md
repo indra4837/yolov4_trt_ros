@@ -13,7 +13,7 @@ Average FPS w maximum performace on Jetson is ~ 10-11 FPS
 ---
 ## Setting up the environment
 
-### Install dependencies
+### Install dependencies (ALREADY DONE)
 
 ### Current Environment:
 
@@ -60,73 +60,58 @@ $ sudo pip3 install onnx==1.4.1
 * Please also install [jetson-inference](https://github.com/dusty-nv/ros_deep_learning#jetson-inference)
 * Note: This package uses similar nodes to ros_deep_learning package. Please place a CATKIN_IGNORE in that package to avoid similar node name catkin_make error
 ---
-## Setting up the package
+## Setting up the package (START HERE)
 
-### 1. Clone project into catkin_ws and build it
+Start by going into the _~/Documents/ros-docker-car_ and run `./run.bash`
+
+### 1. Install jetson inference
+
+Run these commands one-by-one without the comments (anything after a #)
 
 ``` 
-$ cd ~/catkin_ws && catkin_make
+$ sudo chown -R developer:1000 catkin_ws
+$ sudo chown -R developer:1000 .ros
+$ cd catkin_ws/src/jetson-inference
+$ sudo rm -rd build/
+$ sudo chmod +777 install_jetson_inference.sh
+$ sudo ./install_jetson_inference.sh  # Will take around 10 minutes
+```
+
+### 2. Make
+
+Run these commands one-by-one without the comments (anything after a #)
+
+```
+$ cd ~/catkin_ws
+$ catkin_make
 $ source devel/setup.bash
+$ cd src/yolov4_trt_ros/plugins
+$ make  # If it says “Nothing to be done for all”, it’s fine
 ```
 
-### 2. Make libyolo_layer.so
+
+### 3. Random steps
+
+These are patches, could be moved into the dockerfile in the future, but until then, just run commands.
 
 ```
-$ cd ${HOME}/catkin_ws/src/yolov4_trt_ros/plugins
-$ make
+$ sudo apt install python-pip  # We need to install pip for python2.7 too
+$ pip install pycuda   # Will take around 5 minutes
 ```
 
-This will generate a libyolo_layer.so file
-
-### 3. Place your yolo.weights and yolo.cfg file in the yolo folder
-
+Open another terminal (on the host) and run:
 ```
-$ cd ${HOME}/catkin_ws/src/yolov4_trt_ros/yolo
-```
-** Please name the yolov4.weights and yolov4.cfg file as follows:
-- yolov4.weights
-- yolov4.cfg
-
-Run the conversion script to convert to TensorRT engine file
-
-```
-$ ./convert_yolo_trt
+$ xhost +
 ```
 
-- Input the appropriate arguments
-- This conversion might take awhile
-- The optimised TensorRT engine would now be saved as yolov3-416.trt / yolov4-416.trt
-
-### 4. Change the class labels
-
-```
-$ cd ${HOME}/catkin_ws/src/yolov4_trt_ros/utils
-$ vim yolo_classes.py
-```
-
-- Change the class labels to suit your model
-
-### 5. Change the video_input and topic_name
-
-```
-$ cd ${HOME}/catkin_ws/src/yolov4_trt_ros/launch
-```
-
-- `yolov3_trt.launch` : change the topic_name
-
-- `yolov4_trt.launch` : change the topic_name
-
-- `video_source.launch` : change the input format (refer to this [Link](https://github.com/dusty-nv/jetson-inference/blob/master/docs/aux-streaming.md)
-
-   * video_source.launch requires jetson-inference to be installed
-   * Default input is CSI camera
+You may now move on to using the package section down below.
 
 ---
 ## Using the package
 
 ### Running the package
 
-Note: Run the launch files separately in different terminals
+*Note: Run the launch files separately in different terminals. To do so, run `./exec_me.bash` but make sure you also run `cd ~/catkin_ws` && `source devel/setup.bash`*
 
 ### 1. Run the video_source 
 
@@ -148,7 +133,7 @@ $ roslaunch yolov4_trt_ros yolov3_trt.launch
 $ roslaunch yolov4_trt_ros yolov4_trt.launch
 ```
 
-### 3. For maximum performance
+### 3. For maximum performance (AVOID FOR NOW)
 
 ```
 $ cd /usr/bin/
