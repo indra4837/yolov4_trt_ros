@@ -11,9 +11,9 @@ Average FPS w maximum performace on Jetson is ~ 10-11 FPS
 ![Video_Result2](docs/results2.png)
 
 ---
-## Setting up the environment
+## Setting up the environment *(ALREADY DONE)*
 
-### Install dependencies (ALREADY DONE)
+### Install dependencies
 
 ### Current Environment:
 
@@ -60,7 +60,7 @@ $ sudo pip3 install onnx==1.4.1
 * Please also install [jetson-inference](https://github.com/dusty-nv/ros_deep_learning#jetson-inference)
 * Note: This package uses similar nodes to ros_deep_learning package. Please place a CATKIN_IGNORE in that package to avoid similar node name catkin_make error
 ---
-## Setting up the package (START HERE)
+## Setting up the package *(START HERE)*
 
 Start by going into the _~/Documents/ros-docker-car_ and run `./run.bash`
 
@@ -133,7 +133,7 @@ $ roslaunch yolov4_trt_ros yolov3_trt.launch
 $ roslaunch yolov4_trt_ros yolov4_trt.launch
 ```
 
-### 3. For maximum performance (AVOID FOR NOW)
+### 3. For maximum performance *(AVOID FOR NOW)*
 
 ```
 $ cd /usr/bin/
