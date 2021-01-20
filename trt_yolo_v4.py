@@ -20,6 +20,8 @@ from vision_msgs.msg import BoundingBox2D
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 
+# CONSTANTS FOR CAPSTONE -- BAD PRACTICE
+VIDEO_TOPIC = "/omega_rec_image"
 
 class yolov4(object):
     def __init__(self):
@@ -52,8 +54,9 @@ class yolov4(object):
         
         rospack = rospkg.RosPack()
         package_path = rospack.get_path("yolov4_trt_ros")
-        self.video_topic = rospy.get_param("/video_topic", "/video_source/raw")
-        self.model = rospy.get_param("/model", "yolov4")
+        self.video_topic = rospy.get_param("video_topic", VIDEO_TOPIC)
+        print("video_topic: " + str(self.video_topic)) # debug. param server not working
+        self.model = rospy.get_param("/model", "yolov4") # -768x384
         self.model_path = rospy.get_param(
             "/model_path", package_path + "/yolo/")
         self.input_shape = rospy.get_param("/input_shape", "416")
@@ -119,7 +122,7 @@ class yolov4(object):
         # converts back to ros_img type for publishing
         try:
             overlay_img = self.bridge.cv2_to_imgmsg(
-                cv_img, encoding="passthrough")
+                cv_img, encoding="bgr8")
             rospy.logdebug("CV Image converted for publishing")
             self.overlay_pub.publish(overlay_img)
         except CvBridgeError as e:
