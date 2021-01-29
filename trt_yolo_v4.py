@@ -31,6 +31,7 @@ class yolov4(object):
         self.init_params()
         self.init_yolo()
         self.cuda_ctx = cuda.Device(0).make_context()
+        
         self.trt_yolo = TrtYOLO(
             (self.model_path + self.model), (self.h, self.w), self.category_num)
 
@@ -51,7 +52,6 @@ class yolov4(object):
 
     def init_params(self):
         """ Initializes ros parameters """
-        
         rospack = rospkg.RosPack()
         package_path = rospack.get_path("yolov4_trt_ros")
         self.video_topic = rospy.get_param("video_topic", VIDEO_TOPIC)
@@ -72,19 +72,21 @@ class yolov4(object):
 
     def init_yolo(self):
         """ Initialises yolo parameters required for trt engine """
+        print(self.model)
 
         if self.model.find('-') == -1:
             self.model = self.model + "-" + self.input_shape
             
         yolo_dim = self.model.split('-')[-1]
-
+        
         if 'x' in yolo_dim:
             dim_split = yolo_dim.split('x')
             if len(dim_split) != 2:
                 raise SystemExit('ERROR: bad yolo_dim (%s)!' % yolo_dim)
-            self.w, self.h = int(dim_split[0]), int(dim_split[1])
+            print('dim_split[0]: ' + dim_split[0] + ' dim_split[1]: ' + dim_split[1])
         else:
             self.h = self.w = int(yolo_dim)
+
         if self.h % 32 != 0 or self.w % 32 != 0:
             raise SystemExit('ERROR: bad yolo_dim (%s)!' % yolo_dim)
 
@@ -139,7 +141,8 @@ class yolov4(object):
         detection2d = Detector2DArray()
         detection = Detector2D()
         detection2d.header.stamp = rospy.Time.now()
-        
+      
+        print("========== NEW ARRAY =============")
         for i in range(len(boxes)):
             # boxes : xmin, ymin, xmax, ymax
             for _ in boxes:
@@ -154,6 +157,9 @@ class yolov4(object):
 
                 detection.bbox.size_x = abs(boxes[i][0] - boxes[i][2])
                 detection.bbox.size_y = abs(boxes[i][1] - boxes[i][3])
+              
+                string = 'box center ({:f}, {:f}) size ({:f}, {:f})'.format(detection.bbox.center.x, detection.bbox.center.y, detection.bbox.size_x, detection.bbox.size_y)
+                print(string)
 
             detection2d.detections.append(detection)
         
