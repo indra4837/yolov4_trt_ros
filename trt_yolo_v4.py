@@ -139,28 +139,23 @@ class yolov4(object):
         clss  (List(int))	: Class ID of all classes
         """
         detection2d = Detector2DArray()
-        detection = Detector2D()
         detection2d.header.stamp = rospy.Time.now()
-      
-        print("========== NEW ARRAY =============")
+     
         for i in range(len(boxes)):
             # boxes : xmin, ymin, xmax, ymax
-            for _ in boxes:
-                detection.header.stamp = rospy.Time.now()
-                detection.header.frame_id = "camera" # change accordingly
-                detection.results.id = clss[i]
-                detection.results.score = confs[i]
+            detection = Detector2D()
+            detection.header.stamp = rospy.Time.now()
+            detection.header.frame_id = "camera" # change accordingly
+            detection.results.id = clss[i]
+            detection.results.score = confs[i]
 
-                detection.bbox.center.x = boxes[i][0] + (boxes[i][2] - boxes[i][0])/2
-                detection.bbox.center.y = boxes[i][1] + (boxes[i][3] - boxes[i][1])/2
-                detection.bbox.center.theta = 0.0  # change if required
+            detection.bbox.center.x = boxes[i][0] + (boxes[i][2] - boxes[i][0])/2
+            detection.bbox.center.y = boxes[i][1] + (boxes[i][3] - boxes[i][1])/2
+            detection.bbox.center.theta = 0.0  # change if required
 
-                detection.bbox.size_x = abs(boxes[i][0] - boxes[i][2])
-                detection.bbox.size_y = abs(boxes[i][1] - boxes[i][3])
-              
-                string = 'box center ({:f}, {:f}) size ({:f}, {:f})'.format(detection.bbox.center.x, detection.bbox.center.y, detection.bbox.size_x, detection.bbox.size_y)
-                print(string)
-
+            detection.bbox.size_x = abs(boxes[i][0] - boxes[i][2])
+            detection.bbox.size_y = abs(boxes[i][1] - boxes[i][3])
+          
             detection2d.detections.append(detection)
         
         self.detection_pub.publish(detection2d)
