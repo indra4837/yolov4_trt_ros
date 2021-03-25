@@ -1,1 +1,9 @@
-yolo/yolov4-416.trt
+# Yolo files
+*.trt
+*.weights
+*.cfg
+*.onnx
+*.zip
+
+# Python
+*.pyc

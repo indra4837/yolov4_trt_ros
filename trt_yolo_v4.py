@@ -7,7 +7,7 @@ import cv2
 import pycuda.autoinit  # For initializing CUDA driver
 import pycuda.driver as cuda
 
-from utils.yolo_classes import get_cls_dict
+from utils.yolo_classes import get_cls_dict, CLASSES_LIST
 from utils.display import open_window, set_display, show_fps
 from utils.visualization import BBoxVisualization
 from utils.yolo_with_plugins import TrtYOLO
@@ -19,6 +19,7 @@ from yolov4_trt_ros.msg import Detector2D
 from vision_msgs.msg import BoundingBox2D
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
+from autoware_msgs.msg import DetectedObject, DetectedObjectArray
 
 
 class yolov4(object):
@@ -52,11 +53,11 @@ class yolov4(object):
         
         rospack = rospkg.RosPack()
         package_path = rospack.get_path("yolov4_trt_ros")
-        self.video_topic = rospy.get_param("/video_topic", "/video_source/raw")
-        self.model = rospy.get_param("/model", "yolov4Custom")
+        self.video_topic = rospy.get_param("/video_topic", "/kitti/camera_color_left/image_raw")
+        self.model = rospy.get_param("/model", "yolov4")
         self.model_path = rospy.get_param(
             "/model_path", package_path + "/yolo/")
-        self.category_num = rospy.get_param("/category_number", 10)
+        self.category_num = rospy.get_param("/category_number", 80)
         self.input_shape = rospy.get_param("/input_shape", "416")
         self.conf_th = rospy.get_param("/confidence_threshold", 0.5)
         self.show_img = rospy.get_param("/show_image", True)
@@ -64,6 +65,8 @@ class yolov4(object):
             self.video_topic, Image, self.img_callback, queue_size=1, buff_size=1920*1080*3)
         self.detection_pub = rospy.Publisher(
             "detections", Detector2DArray, queue_size=1)
+        self.detection_pub_autoware = rospy.Publisher(
+            "/detection/image_detector/objects", DetectedObjectArray, queue_size=1)
         self.overlay_pub = rospy.Publisher(
             "/result/overlay", Image, queue_size=1)
 
@@ -109,7 +112,8 @@ class yolov4(object):
             toc = time.time()
             fps = 1.0 / (toc - tic)
 
-            self.publisher(boxes, confs, clss)
+            # self.publisher(boxes, confs, clss)
+            self.publisher_autoware(boxes, confs, clss)
 
             if self.show_img:
                 cv_img = show_fps(cv_img, fps)
@@ -125,6 +129,39 @@ class yolov4(object):
         except CvBridgeError as e:
             rospy.loginfo("Failed to convert image %s", str(e))
 
+    def publisher_autoware(self, boxes, confs, clss):
+        """ Publishes to autoware_msgs
+
+        Parameters:
+        boxes (List(List(int))) : Bounding boxes of all objects
+        confs (List(double))	: Probability scores of all objects
+        clss  (List(int))	: Class ID of all classes
+        """
+        detection2d = DetectedObjectArray()
+        detection = DetectedObject()
+        detection2d.header.stamp = rospy.Time.now()
+        detection2d.header.frame_id = "camera" # change accordingly
+
+        for i in range(len(boxes)):
+            # boxes : xmin, ymin, xmax, ymax
+            for _ in boxes:
+                detection.header.stamp = rospy.Time.now()
+                detection.header.frame_id = "camera" # change accordingly
+                detection.id = clss[i]
+                detection.score = confs[i]
+                detection.label = CLASSES_LIST[int(clss[i])]
+
+                detection.x = boxes[i][0]
+                detection.y = boxes[i][1]
+
+                detection.width = abs(boxes[i][0] - boxes[i][2])
+                detection.height = abs(boxes[i][1] - boxes[i][3])
+
+            detection2d.objects.append(detection)
+        
+        self.detection_pub_autoware.publish(detection2d)
+
+
     def publisher(self, boxes, confs, clss):
         """ Publishes to detector_msgs
 
@@ -136,15 +173,16 @@ class yolov4(object):
         detection2d = Detector2DArray()
         detection = Detector2D()
         detection2d.header.stamp = rospy.Time.now()
-	detection2d.header.frame_id = "camera" # change accordingly
+        detection2d.header.frame_id = "camera" # change accordingly
         
         for i in range(len(boxes)):
             # boxes : xmin, ymin, xmax, ymax
             for _ in boxes:
-		detection.header.stamp = rospy.Time.now()
+                detection.header.stamp = rospy.Time.now()
                 detection.header.frame_id = "camera" # change accordingly
                 detection.results.id = clss[i]
                 detection.results.score = confs[i]
+                detection.results.label = CLASSES_LIST[int(clss[i])]
 
                 detection.bbox.center.x = boxes[i][0] + (boxes[i][2] - boxes[i][0])/2
                 detection.bbox.center.y = boxes[i][1] + (boxes[i][3] - boxes[i][1])/2
