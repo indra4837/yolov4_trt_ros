@@ -125,6 +125,8 @@ class yolov4(object):
             overlay_img = self.bridge.cv2_to_imgmsg(
                 cv_img, encoding="passthrough")
             rospy.logdebug("CV Image converted for publishing")
+            overlay_img.header.frame_id = 'usb_cam'
+            overlay_img.encoding = 'bgr8'
             self.overlay_pub.publish(overlay_img)
         except CvBridgeError as e:
             rospy.loginfo("Failed to convert image %s", str(e))
@@ -139,8 +141,8 @@ class yolov4(object):
         """
         detection2d = DetectedObjectArray()
         detection = DetectedObject()
-        detection2d.header.stamp = rospy.Time.now()
-        detection2d.header.frame_id = "usb_cam" # change accordingly
+        # detection2d.header.stamp = rospy.Time.now()
+        # detection2d.header.frame_id = "usb_cam" # change accordingly
 
         for i in range(len(boxes)):
             # boxes : xmin, ymin, xmax, ymax
