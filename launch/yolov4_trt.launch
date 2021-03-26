@@ -1,4 +1,8 @@
 <launch>
+
+	<arg name="camera_id" default="/"/>
+	<arg name="image_src" default="usb_cam/image_raw"/>
+
 	<!-- yolov4_trt_node -->
 	<node pkg="yolov4_trt_ros" type="trt_yolo_v4.py" name="yolov4_trt_node" output="screen">		
 		<param name="video_topic" type="string" value="/usb_cam/image_raw" />
@@ -9,4 +13,12 @@
 		<param name="confidence_threshold" type="double" value="0.5" />
 		<param name="show_image" type="bool" value="False" />
 	</node>
+
+
+	<node pkg="detected_objects_visualizer" type="visualize_rects" name="yolo3_rects" output="screen">
+		<param name="image_src" value="$(arg camera_id)$(arg image_src)"/>
+		<param name="image_out" value="/image_rects"/>
+		<param name="object_src" value="/detection/image_detector/objects"/> <!-- this is fixed by definition -->
+  	</node>
+
 </launch>
