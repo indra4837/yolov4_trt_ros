@@ -53,18 +53,18 @@ class yolov4(object):
         
         rospack = rospkg.RosPack()
         package_path = rospack.get_path("yolov4_trt_ros")
-        self.video_topic = rospy.get_param("/video_topic", "/kitti/camera_color_left/image_raw")
+        self.video_topic = rospy.get_param("/video_topic", "/usb_cam/image_raw")
         self.model = rospy.get_param("/model", "yolov4")
         self.model_path = rospy.get_param(
             "/model_path", package_path + "/yolo/")
         self.category_num = rospy.get_param("/category_number", 80)
         self.input_shape = rospy.get_param("/input_shape", "416")
         self.conf_th = rospy.get_param("/confidence_threshold", 0.5)
-        self.show_img = rospy.get_param("/show_image", True)
+        self.show_img = rospy.get_param("/show_image", False)
         self.image_sub = rospy.Subscriber(
             self.video_topic, Image, self.img_callback, queue_size=1, buff_size=1920*1080*3)
-        self.detection_pub = rospy.Publisher(
-            "detections", Detector2DArray, queue_size=1)
+        # self.detection_pub = rospy.Publisher(
+        #     "detections", Detector2DArray, queue_size=1)
         self.detection_pub_autoware = rospy.Publisher(
             "/detection/image_detector/objects", DetectedObjectArray, queue_size=1)
         self.overlay_pub = rospy.Publisher(

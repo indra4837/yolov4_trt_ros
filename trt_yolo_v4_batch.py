@@ -7,7 +7,7 @@ import cv2
 import pycuda.autoinit  # For initializing CUDA driver
 import pycuda.driver as cuda
 
-from utils.yolo_classes import get_cls_dict
+from utils.yolo_classes import get_cls_dict, CLASSES_LIST
 from utils.display import open_window, set_display, show_fps
 from utils.visualization import BBoxVisualization
 from utils.yolo_with_plugins_batch import TrtYOLO
@@ -19,6 +19,7 @@ from yolov4_trt_ros.msg import Detector2D
 from vision_msgs.msg import BoundingBox2D
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
+from autoware_msgs.msg import DetectedObject, DetectedObjectArray
 
 
 class yolov4(object):
@@ -54,33 +55,31 @@ class yolov4(object):
         package_path = rospack.get_path("yolov4_trt_ros")
         #self.video_topic1 = rospy.get_param(
         #    "/video_topic1", "/zed/zed_node/left_raw/image_raw_color")
+        self.detection_1 = DetectedObject()
+        self.detection_2 = DetectedObject()
         self.video_topic1 = rospy.get_param(
-            "/video_topic1", "video_source/raw")
+            "/video_topic1", "/usb_cam/image_raw")
         self.video_topic2 = rospy.get_param(
-            "/video_topic2", "/zed/zed_node/left_raw/image_raw_color")
-        self.video_topic3 = rospy.get_param(
-            "/video_topic3", "/zed/zed_node/right_raw/image_raw_color")
-        self.video_topic4 = rospy.get_param(
-            "/video_topic4", "/zed/zed_node/right_raw/image_raw_color")
-        self.model = rospy.get_param("/model", "yolov4Custom")
+            "/video_topic2", "/zed/zed_node/right_raw/image_raw_color")
+        self.model = rospy.get_param("/model", "yolov4")
         self.model_path = rospy.get_param(
             "/model_path", package_path + "/yolo/")
-        self.category_num = rospy.get_param("/category_number", 10)
+        self.category_num = rospy.get_param("/category_number", 80)
         self.input_shape = rospy.get_param("/input_shape", "416")
         self.conf_th = rospy.get_param("/confidence_threshold", 0.5)
-        self.show_img = rospy.get_param("/show_image", True)
+        self.show_img = rospy.get_param("/show_image", False)
         self.image_sub1 = rospy.Subscriber(
             self.video_topic1, Image, self.img_callback1, queue_size=1, buff_size=2**26)
         self.image_sub2 = rospy.Subscriber(
             self.video_topic2, Image, self.img_callback2, queue_size=1, buff_size=2**26)
-        self.image_sub3 = rospy.Subscriber(
-            self.video_topic3, Image, self.img_callback3, queue_size=1, buff_size=2**26)
-        self.image_sub4 = rospy.Subscriber(
-            self.video_topic4, Image, self.img_callback4, queue_size=1, buff_size=2**26)
-        self.detection_pub = rospy.Publisher(
-            "detections", Detector2DArray, queue_size=1)
-        self.overlay_pub = rospy.Publisher(
-            "/result/overlay", Image, queue_size=1)
+        self.detection_pub_autoware1 = rospy.Publisher(
+            "/detection/image_detector/front/objects", DetectedObjectArray, queue_size=1)
+        self.detection_pub_autoware2 = rospy.Publisher(
+            "/detection/image_detector/right/objects", DetectedObjectArray, queue_size=1)
+        self.overlay_pub1 = rospy.Publisher(
+            "/result/overlay1", Image, queue_size=1)
+        self.overlay_pub2 = rospy.Publisher(
+            "/result/overlay2", Image, queue_size=1)
 
     def init_yolo(self):
         """ Initialises yolo parameters required for trt engine """
@@ -119,12 +118,13 @@ class yolov4(object):
         cv_img = self.vis.draw_bboxes(cv_img, boxes, confs, clss)
         toc = time.time()
         fps = 1.0 / (toc - tic)
-        print("Cam1: " + str(fps) + "\n")
-        self.publisher(boxes, confs, clss, "Cam1")
+        frame_id = "usb_cam"
+
+        self.publisher_autoware_1(boxes, confs, clss, frame_id)
         
         if self.show_img:
             cv_img = show_fps(cv_img, fps)
-            cv2.imshow("Cam 1", cv_img)
+            cv2.imshow(frame_id, cv_img)
             cv2.waitKey(1)
         
         # converts back to ros_img type for publishing
@@ -132,7 +132,7 @@ class yolov4(object):
             overlay_img = self.bridge.cv2_to_imgmsg(
                 cv_img, encoding="passthrough")
             rospy.logdebug("CV Image converted for publishing")
-            self.overlay_pub.publish(overlay_img)
+            self.overlay_pub1.publish(overlay_img)
         except CvBridgeError as e:
             rospy.loginfo("Failed to convert image %s", str(e))
 
@@ -153,133 +153,106 @@ class yolov4(object):
         cv_img = self.vis.draw_bboxes(cv_img, boxes, confs, clss)
         toc = time.time()
         fps = 1.0 / (toc - tic)
-        print("Cam2: " + str(fps) + "\n")
-        self.publisher(boxes, confs, clss, "Cam2")
+        frame_id = "zed_cam"
 
-        # time 1
-        """
-        if self.show_img:
-            cv_img = show_fps(cv_img, fps)
-            cv2.imshow("Cam 2", cv_img)
-            # time 2
-            cv2.waitKey(1)
-        """
+        self.publisher_autoware_2(boxes, confs, clss, frame_id)
         
         # converts back to ros_img type for publishing
         try:
             overlay_img = self.bridge.cv2_to_imgmsg(
                 cv_img, encoding="passthrough")
             rospy.logdebug("CV Image converted for publishing")
-            self.overlay_pub.publish(overlay_img)
+            self.overlay_pub2.publish(overlay_img)
         except CvBridgeError as e:
             rospy.loginfo("Failed to convert image %s", str(e))
 
-    def img_callback3(self, ros_img):
-        """Continuously capture images from camera and do object detection """
 
-        # converts from ros_img to cv_img for processing
-        try:
-            cv_img = self.bridge.imgmsg_to_cv2(
-                ros_img, desired_encoding="bgr8")
-            rospy.logdebug("ROS Image converted for processing")
-        except CvBridgeError as e:
-            rospy.loginfo("Failed to convert image %s", str(e))
-
-        tic = time.time()
-        boxes, confs, clss = self.trt_yolo.detect3(cv_img, self.conf_th)
-        cv_img = self.vis.draw_bboxes(cv_img, boxes, confs, clss)
-        toc = time.time()
-        fps = 1.0 / (toc - tic)
-        print("Cam3: " + str(fps) + "\n")
-        self.publisher(boxes, confs, clss, "Cam3")
-        """
-            if self.show_img:
-                cv_img = show_fps(cv_img, fps)
-                cv2.imshow("Cam 3", cv_img)
-                cv2.waitKey(1)
-        """
-        # converts back to ros_img type for publishing
-        try:
-            overlay_img = self.bridge.cv2_to_imgmsg(
-                cv_img, encoding="passthrough")
-            rospy.logdebug("CV Image converted for publishing")
-            self.overlay_pub.publish(overlay_img)
-        except CvBridgeError as e:
-            rospy.loginfo("Failed to convert image %s", str(e))
-
-    def img_callback4(self, ros_img):
-        """Continuously capture images from camera and do object detection """
-
-        # converts from ros_img to cv_img for processing
-        try:
-            cv_img = self.bridge.imgmsg_to_cv2(
-                ros_img, desired_encoding="bgr8")
-            rospy.logdebug("ROS Image converted for processing")
-        except CvBridgeError as e:
-            rospy.loginfo("Failed to convert image %s", str(e))
-
-        tic = time.time()
-        boxes, confs, clss = self.trt_yolo.detect4(cv_img, self.conf_th)
-        cv_img = self.vis.draw_bboxes(cv_img, boxes, confs, clss)
-        toc = time.time()
-        fps = 1.0 / (toc - tic)
-        print("Cam4: " + str(fps) + "\n")
-        self.publisher(boxes, confs, clss, "Cam4")
-        """
-            if self.show_img:
-                cv_img = show_fps(cv_img, fps)
-                cv2.imshow("Cam 3", cv_img)
-                cv2.waitKey(1)
-        """
-        # converts back to ros_img type for publishing
-        try:
-            overlay_img = self.bridge.cv2_to_imgmsg(
-                cv_img, encoding="passthrough")
-            rospy.logdebug("CV Image converted for publishing")
-            self.overlay_pub.publish(overlay_img)
-        except CvBridgeError as e:
-            rospy.loginfo("Failed to convert image %s", str(e))
-
-    def publisher(self, boxes, confs, clss, frame):
-        """ Publishes to detector_msgs
+    def publisher_autoware_1(self, boxes, confs, clss, frame_id):
+        """ Publishes to autoware_msgs
 
         Parameters:
         boxes (List(List(int))) : Bounding boxes of all objects
         confs (List(double))	: Probability scores of all objects
         clss  (List(int))	: Class ID of all classes
         """
-        detection2d = Detector2DArray()
-        detection = Detector2D()
+
+        detection2d = DetectedObjectArray()
+        detection = DetectedObject()
         detection2d.header.stamp = rospy.Time.now()
-        detection2d.header.frame_id = "camera"  # change accordingly
+        detection2d.header.frame_id = frame_id # change accordingly
+        
+        for i in range(len(boxes)):
+            # boxes : xmin, ymin, xmax, ymax
+            for _ in boxes:
+                self.detection_1.header.stamp = rospy.Time.now()
+                self.detection_1.header.frame_id = frame_id # change accordingly
+                self.detection_1.id = clss[i]
+                self.detection_1.score = confs[i]
+                self.detection_1.label = CLASSES_LIST[int(clss[i])]
+
+                self.detection_1.x = boxes[i][0]
+                self.detection_1.y = boxes[i][1]
+
+                self.detection_1.width = abs(boxes[i][0] - boxes[i][2])
+                self.detection_1.height = abs(boxes[i][1] - boxes[i][3])
+
+            detection2d.objects.append(detection)
+        
+        self.detection_pub_autoware1.publish(detection2d)
+
+    def publisher_autoware_2(self, boxes, confs, clss, frame_id):
+        """ Publishes to autoware_msgs
+
+        Parameters:
+        boxes (List(List(int))) : Bounding boxes of all objects
+        confs (List(double))	: Probability scores of all objects
+        clss  (List(int))	: Class ID of all classes
+        """
+        
+        detection2d = DetectedObjectArray()
+        detection = DetectedObject()
+        detection2d.header.stamp = rospy.Time.now()
+        detection2d.header.frame_id = frame_id # change accordingly
 
         for i in range(len(boxes)):
             # boxes : xmin, ymin, xmax, ymax
             for _ in boxes:
-                detection.header.stamp = rospy.Time.now()
-                detection.header.frame_id = frame  # change accordingly
-                detection.results.id = clss[i]
-                detection.results.score = confs[i]
+                self.detection_2.header.stamp = rospy.Time.now()
+                self.detection_2.header.frame_id = frame_id # change accordingly
+                self.detection_2.id = clss[i]
+                self.detection_2.score = confs[i]
+                self.detection_2.label = CLASSES_LIST[int(clss[i])]
 
-                detection.bbox.center.x = boxes[i][0] + \
-                    (boxes[i][2] - boxes[i][0])/2
-                detection.bbox.center.y = boxes[i][1] + \
-                    (boxes[i][3] - boxes[i][1])/2
-                detection.bbox.center.theta = 0.0  # change if required
+                self.detection_2.x = boxes[i][0]
+                self.detection_2.y = boxes[i][1]
 
-                detection.bbox.size_x = abs(boxes[i][0] - boxes[i][2])
-                detection.bbox.size_y = abs(boxes[i][1] - boxes[i][3])
+                self.detection_2.width = abs(boxes[i][0] - boxes[i][2])
+                self.detection_2.height = abs(boxes[i][1] - boxes[i][3])
 
-            detection2d.detections.append(detection)
+            detection2d.objects.append(detection)
+        
+        self.detection_pub_autoware2.publish(detection2d)
 
-        self.detection_pub.publish(detection2d)
 
+    def overall_publisher(self):
+        """ Overall publisher for both callbacks
+
+        """
+
+        detection2d = DetectedObjectArray()
+        detection2d.header.stamp = rospy.Time.now()
+        detection2d.header.frame_id = "camera"
+        detection2d.objects.append(self.detection_1)
+        detection2d.objects.append(self.detection_2)
+
+        self.detection_pub_autoware.publish(detection2d)
 
 def main():
     yolo = yolov4()
     rospy.init_node('yolov4_trt_ros', anonymous=True)
     try:
-        rospy.spin()
+        while not rospy.is_shutdown():
+            rospy.spin()
     except KeyboardInterrupt:
         del yolo
         rospy.on_shutdown(yolo.clean_up())
