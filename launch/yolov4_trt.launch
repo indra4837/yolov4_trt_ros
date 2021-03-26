@@ -14,7 +14,6 @@
 		<param name="show_image" type="bool" value="False" />
 	</node>
 
-
 	<node pkg="detected_objects_visualizer" type="visualize_rects" name="yolo3_rects" output="screen">
 		<param name="image_src" value="$(arg camera_id)$(arg image_src)"/>
 		<param name="image_out" value="/image_rects"/>
