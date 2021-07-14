@@ -53,10 +53,9 @@ class yolov4(object):
         
         rospack = rospkg.RosPack()
         package_path = rospack.get_path("yolov4_trt_ros")
-        self.video_topic = rospy.get_param("/video_topic", "/usb_cam/image_raw")
+        self.video_topic = rospy.get_param("/video_topic", "/zed_node/left/image_rect_color")
         self.model = rospy.get_param("/model", "yolov4")
-        self.model_path = rospy.get_param(
-            "/model_path", package_path + "/yolo/")
+        self.model_path = rospy.get_param("/model_path", package_path + "/yolo/")
         self.category_num = rospy.get_param("/category_number", 80)
         self.input_shape = rospy.get_param("/input_shape", "416")
         self.conf_th = rospy.get_param("/confidence_threshold", 0.5)
@@ -125,7 +124,7 @@ class yolov4(object):
             overlay_img = self.bridge.cv2_to_imgmsg(
                 cv_img, encoding="passthrough")
             rospy.logdebug("CV Image converted for publishing")
-            overlay_img.header.frame_id = 'usb_cam'
+            overlay_img.header.frame_id = 'left_cam' # change accordingly
             overlay_img.encoding = 'bgr8'
             self.overlay_pub.publish(overlay_img)
         except CvBridgeError as e:
@@ -175,13 +174,13 @@ class yolov4(object):
         detection2d = Detector2DArray()
         detection = Detector2D()
         detection2d.header.stamp = rospy.Time.now()
-        detection2d.header.frame_id = "camera" # change accordingly
+        detection2d.header.frame_id = "left_cam" # change accordingly
         
         for i in range(len(boxes)):
             # boxes : xmin, ymin, xmax, ymax
             for _ in boxes:
                 detection.header.stamp = rospy.Time.now()
-                detection.header.frame_id = "camera" # change accordingly
+                detection.header.frame_id = "left_cam" # change accordingly
                 detection.results.id = clss[i]
                 detection.results.score = confs[i]
                 detection.results.label = CLASSES_LIST[int(clss[i])]

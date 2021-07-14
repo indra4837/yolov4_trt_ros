@@ -1,17 +1,17 @@
 <launch>
-	<arg name="image_src1" default="usb_cam/image_raw"/>
-	<arg name="image_src2" default="/zed/zed_node/right_raw/image_raw_color"/>
+	<arg name="image_src1" default="/zed_node/left/image_rect_color"/>
+	<arg name="image_src2" default="/zed_node/right/image_rect_color"/>
 	
 	<!-- yolov4_trt_node -->
 	<node pkg="yolov4_trt_ros" type="trt_yolo_v4_batch.py" name="yolov4_trt_node_batch" output="screen">
-		<param name="video_topic1" type="string" value="/usb_cam/image_raw" />
-		<param name="video_topic2" type="string" value="/zed/zed_node/right_raw/image_raw_color" />
+		<param name="video_topic1" type="string" value="$(arg image_src1)" />
+		<param name="video_topic2" type="string" value="$(arg image_src2)" />
 		<param name="model" type="string" value="yolov4" />	
 		<param name="model_path" type="string" value="$(find yolov4_trt_ros)/yolo/" />
 		<param name="input_shape" type="string" value="416" />
 		<param name="category_number" type="int" value="80" />
 		<param name="confidence_threshold" type="double" value="0.5" />
-		<param name="show_image" type="bool" value="False" />
+		<param name="show_image" type="bool" value="True" />
 	</node>
 
 </launch>
